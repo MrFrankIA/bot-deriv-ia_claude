@@ -1,0 +1,28 @@
+# Entorno virtual
+.env
+.env/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Datos generados
+*.csv
+
+# Archivos temporales
+*.log
+*.tmp
+
+# VSCode
+.vscode/
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Archivos personales
+Nuevo Documento de texto.txt
+Contexto.txt
+id_ed25519
+Informe_Tecnico_V1_Contextos.docx
