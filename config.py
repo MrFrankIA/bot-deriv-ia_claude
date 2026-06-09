@@ -12,7 +12,10 @@ ARCHIVO_OPERACIONES_PAPER = "operaciones_paper.csv"
 
 MAX_OPERACIONES_ABIERTAS = 3
 MAX_PERDIDAS_CONSECUTIVAS = 999
-VELAS_PARA_EVALUAR = 2
+# 1 vela = 10 ticks = MAXIMO real de un contrato Rise/Fall por ticks en Deriv.
+# El contrato de 20 ticks (2 velas) NO existe; ademas 1 vela es el mejor
+# horizonte observado en el analisis. Ver memoria hallazgos-estrategia.
+VELAS_PARA_EVALUAR = 1
 
 MIN_OPERACIONES_PATRON = 3
 WIN_RATE_MINIMO_PATRON = 40
@@ -26,7 +29,9 @@ USAR_FILTRO_VOLATILIDAD = False
 MAX_RANGO_VELA = 8
 
 BALANCE_INICIAL = 1000
-PAYOUT_SIMULADO = 0.80
+# Payout NETO real cotizado por la API de Deriv (proposal) para R_75 Rise/Fall
+# a 10 ticks: payout bruto 1.92 / stake 1.00 = 0.92 neto. Break-even = 52.08% WR.
+PAYOUT_SIMULADO = 0.92
 
 USAR_STAKE_DINAMICO = True
 RIESGO_POR_OPERACION = 0.001
