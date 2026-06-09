@@ -35,6 +35,7 @@ def crear_archivos_csv():
         with open(ARCHIVO_SENALES, mode="w", newline="") as archivo:
             writer = csv.writer(archivo)
             writer.writerow([
+                "fecha",
                 "hora",
                 "senal_tecnica",
                 "tendencia_contexto",
@@ -68,6 +69,7 @@ def crear_archivos_csv():
         with open(ARCHIVO_OPERACIONES_PAPER, mode="w", newline="") as archivo:
             writer = csv.writer(archivo)
             writer.writerow([
+                "fecha",
                 "hora",
                 "senal",
                 "resultado",
@@ -119,6 +121,7 @@ def guardar_vela_m1(vela):
 
 
 def guardar_senal(
+    fecha,
     hora,
     senal_tecnica,
     tendencia_contexto,
@@ -141,6 +144,7 @@ def guardar_senal(
     with open(ARCHIVO_SENALES, mode="a", newline="") as archivo:
         writer = csv.writer(archivo)
         writer.writerow([
+            fecha,
             hora,
             senal_tecnica,
             tendencia_contexto,
@@ -189,6 +193,7 @@ def guardar_evaluacion(
 
 
 def guardar_operacion_paper(
+    fecha,
     hora,
     senal,
     resultado,
@@ -210,6 +215,7 @@ def guardar_operacion_paper(
     with open(ARCHIVO_OPERACIONES_PAPER, mode="a", newline="") as archivo:
         writer = csv.writer(archivo)
         writer.writerow([
+            fecha,
             hora,
             senal,
             resultado,

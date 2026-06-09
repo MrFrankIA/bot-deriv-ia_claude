@@ -280,7 +280,9 @@ async def escuchar_ticks():
 
                     mostrar_cuenta_paper(cuenta_paper)
 
-                    hora_evaluacion = datetime.now().strftime("%H:%M:%S")
+                    ahora_eval = datetime.now()
+                    fecha_evaluacion = ahora_eval.strftime("%Y-%m-%d")
+                    hora_evaluacion = ahora_eval.strftime("%H:%M:%S")
 
                     guardar_evaluacion(
                         hora_evaluacion,
@@ -295,6 +297,7 @@ async def escuchar_ticks():
                     )
 
                     guardar_operacion_paper(
+                        fecha_evaluacion,
                         hora_evaluacion,
                         operacion["senal"],
                         resultado,
@@ -403,9 +406,12 @@ async def escuchar_ticks():
                     operaciones.append(operacion)
                     print("💾 Operación guardada para evaluación")
 
-                hora_senal = datetime.now().strftime("%H:%M:%S")
+                ahora_senal = datetime.now()
+                fecha_senal = ahora_senal.strftime("%Y-%m-%d")
+                hora_senal = ahora_senal.strftime("%H:%M:%S")
 
                 guardar_senal(
+                    fecha_senal,
                     hora_senal,
                     senal_tecnica,
                     tendencia_contexto,
