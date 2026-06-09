@@ -25,13 +25,3 @@ def detectar_sweep_liquidez(velas):
         return "SWEEP_LOW"
 
     return "SIN_SWEEP"
-
-
-def interpretar_sweep(sweep):
-    if sweep == "SWEEP_HIGH":
-        return "POSIBLE_VENTA"
-
-    if sweep == "SWEEP_LOW":
-        return "POSIBLE_COMPRA"
-
-    return "SIN_SEÑAL"

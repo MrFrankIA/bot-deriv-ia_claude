@@ -36,7 +36,6 @@ from patrones import detectar_patron, clasificar_impulso
 from senales import (
     analizar_contexto,
     detectar_continuidad_impulso,
-    generar_senal,
     obtener_tendencia_contexto,
     calcular_score,
     validar_patron
