@@ -112,6 +112,10 @@ async def escuchar_ticks():
                 )
 
                 if vela_m1 is not None:
+                    # Enriquecer la vela M1 con patron/impulso para que
+                    # detectar_mercado_lateral() funcione (lee esas claves).
+                    vela_m1["patron"] = detectar_patron(vela_m1)
+                    vela_m1["impulso"] = clasificar_impulso(vela_m1)
                     velas_m1.append(vela_m1)
                     guardar_vela_m1(vela_m1)
 
