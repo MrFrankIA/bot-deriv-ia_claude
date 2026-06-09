@@ -84,7 +84,7 @@ VELAS_EVALUAR_RESTO   = 4
 # entorno (nunca en el repo; usar .env gitignored / EnvironmentFile de systemd).
 # SOLO_CUENTA_VIRTUAL rechaza tokens de cuenta real como guard de seguridad.
 MODO_EJECUCION = "paper"                                   # "paper" | "demo"
-DERIV_APP_ID = os.environ.get("DERIV_APP_ID", "1089")
+DERIV_APP_ID = os.environ.get("DERIV_APP_ID", "33v9T8p9UiHME3Pfu5h8n")
 DERIV_API_TOKEN = os.environ.get("DERIV_API_TOKEN_DEMO", "")
 DURACION_TICKS = 10            # 1 vela = 10 ticks (maximo real Rise/Fall ticks)
 MONTO_CONTRATO = 1            # stake por operacion en demo
