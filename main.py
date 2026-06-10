@@ -17,7 +17,9 @@ from config import (
     EXPIRACION_DINAMICA_ACTIVA,
     VELAS_EVALUAR_LATERAL,
     VELAS_EVALUAR_RESTO,
-    SEGUNDOS_VELA_M1
+    SEGUNDOS_VELA_M1,
+    MODO_EJECUCION,
+    MAX_OPERACIONES_ABIERTAS
 )
 from almacenamiento import (
     crear_archivos_csv,
@@ -25,8 +27,10 @@ from almacenamiento import (
     guardar_vela_m1,
     guardar_senal,
     guardar_evaluacion,
-    guardar_operacion_paper
+    guardar_operacion_paper,
+    guardar_operacion_demo
 )
+from ejecucion import operar_demo, ErrorEjecucion
 from velas import construir_vela
 from velas_tiempo import (
     crear_estado_vela_tiempo,
@@ -68,6 +72,60 @@ ticks_vela = []
 velas = deque(maxlen=50)
 velas_m1 = deque(maxlen=200)
 operaciones = []
+
+# Tareas de ejecucion demo en vuelo (para no bloquear el loop de ticks y
+# respetar el tope de operaciones simultaneas).
+tareas_demo = set()
+
+
+async def _ejecutar_y_registrar_demo(senal, contexto):
+    """Coloca una operacion demo real y guarda su resultado en operaciones_demo.csv."""
+    try:
+        res = await operar_demo(senal)
+    except ErrorEjecucion as error:
+        print(f"❌ Demo: error de ejecucion: {error}")
+        return
+    except Exception as error:
+        print(f"❌ Demo: error inesperado: {error}")
+        return
+
+    if res is None:
+        return
+
+    ahora = datetime.now()
+    guardar_operacion_demo(
+        ahora.strftime("%Y-%m-%d"),
+        ahora.strftime("%H:%M:%S"),
+        res["senal"],
+        res["resultado"],
+        res["buy_price"],
+        res["profit"],
+        res["payout"],
+        res.get("entry_spot"),
+        res.get("exit_spot"),
+        res["contract_id"],
+        contexto["patron"],
+        contexto["impulso"],
+        contexto["continuidad"],
+        contexto["score_senal"],
+        contexto["estructura"],
+        contexto["bos"],
+        contexto["choch"],
+        contexto["sweep"],
+        contexto["contexto_valido"],
+    )
+    print(f"💾 Demo registrada: {res['resultado']} profit={res['profit']} (contract {res['contract_id']})")
+
+
+def lanzar_operacion_demo(senal, contexto):
+    """Lanza la operacion demo en segundo plano si no se supero el tope simultaneo."""
+    if len(tareas_demo) >= MAX_OPERACIONES_ABIERTAS:
+        print("⏭ Demo: tope de operaciones simultaneas alcanzado, se omite")
+        return
+    tarea = asyncio.create_task(_ejecutar_y_registrar_demo(senal, contexto))
+    tareas_demo.add(tarea)
+    tarea.add_done_callback(tareas_demo.discard)
+    print(f"🚀 Demo: operacion {senal} lanzada (activas: {len(tareas_demo)})")
 contador_velas = 0
 
 estado_vela_m1 = crear_estado_vela_tiempo()
@@ -405,6 +463,9 @@ async def escuchar_ticks():
 
                     operaciones.append(operacion)
                     print("💾 Operación guardada para evaluación")
+
+                    if MODO_EJECUCION == "demo":
+                        lanzar_operacion_demo(senal_tecnica, operacion)
 
                 ahora_senal = datetime.now()
                 fecha_senal = ahora_senal.strftime("%Y-%m-%d")

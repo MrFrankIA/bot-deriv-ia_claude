@@ -5,7 +5,8 @@ from config import (
     ARCHIVO_VELAS_M1,
     ARCHIVO_SENALES,
     ARCHIVO_EVALUACIONES,
-    ARCHIVO_OPERACIONES_PAPER
+    ARCHIVO_OPERACIONES_PAPER,
+    ARCHIVO_OPERACIONES_DEMO
 )
 
 
@@ -78,6 +79,31 @@ def crear_archivos_csv():
                 "balance",
                 "equity_maxima",
                 "drawdown",
+                "patron",
+                "impulso",
+                "continuidad",
+                "score_senal",
+                "estructura",
+                "bos",
+                "choch",
+                "sweep",
+                "contexto_valido"
+            ])
+
+    if not os.path.exists(ARCHIVO_OPERACIONES_DEMO):
+        with open(ARCHIVO_OPERACIONES_DEMO, mode="w", newline="") as archivo:
+            writer = csv.writer(archivo)
+            writer.writerow([
+                "fecha",
+                "hora",
+                "senal",
+                "resultado",
+                "buy_price",
+                "profit",
+                "payout",
+                "entry_spot",
+                "exit_spot",
+                "contract_id",
                 "patron",
                 "impulso",
                 "continuidad",
@@ -224,6 +250,52 @@ def guardar_operacion_paper(
             balance,
             equity_maxima,
             drawdown,
+            patron,
+            impulso,
+            continuidad,
+            score_senal,
+            estructura,
+            bos,
+            choch,
+            sweep,
+            contexto_valido
+        ])
+
+
+def guardar_operacion_demo(
+    fecha,
+    hora,
+    senal,
+    resultado,
+    buy_price,
+    profit,
+    payout,
+    entry_spot,
+    exit_spot,
+    contract_id,
+    patron,
+    impulso,
+    continuidad,
+    score_senal,
+    estructura,
+    bos,
+    choch,
+    sweep,
+    contexto_valido
+):
+    with open(ARCHIVO_OPERACIONES_DEMO, mode="a", newline="") as archivo:
+        writer = csv.writer(archivo)
+        writer.writerow([
+            fecha,
+            hora,
+            senal,
+            resultado,
+            buy_price,
+            profit,
+            payout,
+            entry_spot,
+            exit_spot,
+            contract_id,
             patron,
             impulso,
             continuidad,
