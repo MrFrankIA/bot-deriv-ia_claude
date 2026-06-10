@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Flask
+from flask import Flask, request
 import csv, os, re, time, json
 
 app = Flask(__name__)
@@ -10,9 +10,22 @@ except ImportError:
     FILTRO_V5_ACTIVO  = None
     HORAS_V5_BLOQUEADAS = None
 
-ARCHIVO_OPERACIONES = "operaciones_paper.csv"
+ARCHIVO_OPERACIONES_PAPER = "operaciones_paper.csv"
+ARCHIVO_OPERACIONES_DEMO  = "operaciones_demo.csv"
 ARCHIVO_SENALES     = "senales.csv"
 ARCHIVO_CONFIG      = "config.py"
+
+# La cuenta demo de Deriv (DOT) arranca con 10000 USD virtuales; el CSV demo no
+# guarda balance corrido, asi que se reconstruye desde el profit acumulado.
+BALANCE_INICIAL_PAPER = 1000.0
+BALANCE_INICIAL_DEMO  = 10000.0
+
+MODOS = {
+    "demo":  dict(archivo=ARCHIVO_OPERACIONES_DEMO,  inicial=BALANCE_INICIAL_DEMO,
+                  etiqueta="DEMO (real)",   color="#22C55E"),
+    "paper": dict(archivo=ARCHIVO_OPERACIONES_PAPER, inicial=BALANCE_INICIAL_PAPER,
+                  etiqueta="PAPER (sim)",   color="#60a5fa"),
+}
 
 BOT_ACTIVO_SEG    = 120
 BOT_SIN_SENAL_SEG = 600
@@ -34,10 +47,10 @@ def numero(v, d=0.0):
         return d
 
 
-def leer_operaciones():
-    if not os.path.exists(ARCHIVO_OPERACIONES):
+def leer_operaciones(archivo):
+    if not os.path.exists(archivo):
         return []
-    with open(ARCHIVO_OPERACIONES, mode="r", newline="", encoding="utf-8") as f:
+    with open(archivo, mode="r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         header = reader.fieldnames or []
         filas  = list(reader)
@@ -56,6 +69,25 @@ def leer_operaciones():
             norm[k] = v.strip() if v else ""
         resultado.append(norm)
     return resultado
+
+
+def normalizar_demo(ops, balance_inicial):
+    """El CSV demo guarda 'profit' (no 'profit_loss') y no lleva balance/drawdown.
+    Se reconstruyen para que el resto del dashboard (pensado para paper) funcione
+    sin cambios. El balance corrido = balance_inicial + profit acumulado refleja
+    el saldo real de la cuenta demo (solo este bot la opera)."""
+    bal = balance_inicial
+    eq_max = balance_inicial
+    for op in ops:
+        pl = numero(op.get("profit", 0))
+        op["profit_loss"] = "{:.2f}".format(pl)
+        op.setdefault("stake", op.get("buy_price", ""))
+        bal += pl
+        if bal > eq_max:
+            eq_max = bal
+        op["balance"]  = "{:.2f}".format(bal)
+        op["drawdown"] = "{:.2f}".format(eq_max - bal)
+    return ops
 
 
 def leer_senales():
@@ -210,7 +242,7 @@ def tabla_ranking_html(filas, titulo, tbl_id):
     )
 
 
-def calcular_simulacion_v5(ops):
+def calcular_simulacion_v5(ops, balance_inicial=1000.0):
     horas_v5 = HORAS_V5_BLOQUEADAS or set()
     filtradas = []
     bloqueadas = []
@@ -229,7 +261,7 @@ def calcular_simulacion_v5(ops):
         wr  = (gan / total * 100) if total else 0.0
         exp = (pl / total)        if total else 0.0
         # drawdown max via acumulado
-        bal = 1000.0; eq_max = 1000.0; dd_max = 0.0
+        bal = balance_inicial; eq_max = balance_inicial; dd_max = 0.0
         for o in lst:
             bal += numero(o.get("profit_loss",0))
             if bal > eq_max: eq_max = bal
@@ -257,7 +289,7 @@ def calcular_promedio_diario(ops):
     return dict(promedio=round(promedio,1), dias=len(dias), total=total)
 
 
-def calcular_alertas(ops, senales):
+def calcular_alertas(ops, senales, archivo_ops):
     alertas = []
     ahora = time.time()
     # Alerta señal reciente
@@ -269,8 +301,8 @@ def calcular_alertas(ops, senales):
     else:
         alertas.append("No hay senales registradas")
     # Alerta operacion reciente (basada en mtime del CSV)
-    if os.path.exists(ARCHIVO_OPERACIONES):
-        mtime_op = os.path.getmtime(ARCHIVO_OPERACIONES)
+    if os.path.exists(archivo_ops):
+        mtime_op = os.path.getmtime(archivo_ops)
         if ops and ahora - mtime_op > 1800:
             seg = int(ahora - mtime_op)
             alertas.append("Sin operaciones nuevas hace {}s".format(seg))
@@ -278,7 +310,14 @@ def calcular_alertas(ops, senales):
 
 @app.route("/")
 def inicio():
-    ops     = leer_operaciones()
+    modo = request.args.get("modo", "demo")
+    if modo not in MODOS:
+        modo = "demo"
+    cfg_modo = MODOS[modo]
+
+    ops     = leer_operaciones(cfg_modo["archivo"])
+    if modo == "demo":
+        ops = normalizar_demo(ops, cfg_modo["inicial"])
     senales = leer_senales()
 
     simbolo, nombre_activo = leer_activo()
@@ -395,13 +434,13 @@ def inicio():
     html_rx = tabla_ranking_html(r_x, "Ranking por Contexto Valido", "tbl-ctx")
 
     # ── V5 simulation ────────────────────────────────────────────────────────
-    m_actual, m_v5, ops_bloqueadas = calcular_simulacion_v5(ops)
+    m_actual, m_v5, ops_bloqueadas = calcular_simulacion_v5(ops, cfg_modo["inicial"])
 
     # ── promedio diario ───────────────────────────────────────────────────────
     promedio_info = calcular_promedio_diario(ops)
 
     # ── alertas ───────────────────────────────────────────────────────────────
-    alertas = calcular_alertas(ops, senales)
+    alertas = calcular_alertas(ops, senales, cfg_modo["archivo"])
 
     # ── ultima op completa (expand) ───────────────────────────────────────────
     if ultima_op:
@@ -516,7 +555,21 @@ def inicio():
     j_p  = json.dumps(profits)
     j_dd = json.dumps(dds)
 
+    # ── selector de modo (DEMO real / PAPER sim) ──────────────────────────────
+    botones = ""
+    for k, c in MODOS.items():
+        activo = (k == modo)
+        estilo = ("background:{};color:#0f172a;font-weight:bold".format(c["color"])
+                  if activo else "background:#1e293b;color:#94a3b8")
+        botones += (
+            '<a href="/?modo={}" class="badge" style="{};text-decoration:none">{}</a>'
+        ).format(k, estilo, c["etiqueta"])
+    html_modo = (
+        '<div class="badge" style="color:{}">MODO: {}</div>{}'
+    ).format(cfg_modo["color"], cfg_modo["etiqueta"], botones)
+
     return HTML_TEMPLATE.format(
+        html_modo=html_modo,
         color_estado=color_estado, estado=estado, tiempo_estado=tiempo_estado,
         nombre_activo=nombre_activo, simbolo=simbolo,
         total=m["total"], wr=m["wr"],
@@ -592,6 +645,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <header>
   <h1>Bot Deriv IA -- Dashboard V3</h1>
   <div class="badges">
+    {html_modo}
     <div class="badge" style="color:{color_estado}">{estado} &bull; {tiempo_estado}</div>
     <div class="badge" style="color:#60a5fa">{nombre_activo} ({simbolo})</div>
   </div>
