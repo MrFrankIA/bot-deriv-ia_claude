@@ -10,6 +10,11 @@ __pycache__/
 # Datos generados
 *.csv
 
+# Base de datos SQLite (datos, no codigo)
+*.db
+*.db-wal
+*.db-shm
+
 # Archivos temporales
 *.log
 *.tmp

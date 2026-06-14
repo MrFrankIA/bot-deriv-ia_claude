@@ -8,9 +8,27 @@ from config import (
     ARCHIVO_OPERACIONES_PAPER,
     ARCHIVO_OPERACIONES_DEMO
 )
+import db
+
+
+def _db_seguro(funcion, valores):
+    """Persiste en SQLite sin que un fallo de DB rompa nunca el bot: el CSV ya
+    se escribio antes y la ejecucion del contrato ya ocurrio. La DB es la copia
+    analitica/operativa para el motor de aprendizaje."""
+    try:
+        funcion(valores)
+    except Exception as error:
+        print(f"⚠️ DB: no se persistio en SQLite ({error}); CSV intacto")
 
 
 def crear_archivos_csv():
+    # Inicializa tambien el esquema SQLite (idempotente). Si falla, el bot
+    # sigue con CSV.
+    try:
+        db.inicializar_db()
+    except Exception as error:
+        print(f"⚠️ DB: no se pudo inicializar SQLite ({error}); se usa solo CSV")
+
     if not os.path.exists(ARCHIVO_VELAS):
         with open(ARCHIVO_VELAS, mode="w", newline="") as archivo:
             writer = csv.writer(archivo)
@@ -191,6 +209,13 @@ def guardar_senal(
             motivo_contexto
         ])
 
+    _db_seguro(db.insertar_senal, [
+        fecha, hora, senal_tecnica, tendencia_contexto, patron_actual,
+        impulso, continuidad, score_senal, str(permitida), motivo_bloqueo,
+        combinacion_actual, wr_combinacion, estructura, bos, choch, sweep,
+        str(mercado_lateral), str(contexto_valido), motivo_contexto,
+    ])
+
 
 def guardar_evaluacion(
     hora,
@@ -261,6 +286,12 @@ def guardar_operacion_paper(
             contexto_valido
         ])
 
+    _db_seguro(db.insertar_operacion_paper, [
+        fecha, hora, senal, resultado, stake, profit_loss, balance,
+        equity_maxima, drawdown, patron, impulso, continuidad, score_senal,
+        estructura, bos, choch, sweep, str(contexto_valido),
+    ])
+
 
 def guardar_operacion_demo(
     fecha,
@@ -306,3 +337,9 @@ def guardar_operacion_demo(
             sweep,
             contexto_valido
         ])
+
+    _db_seguro(db.insertar_operacion_demo, [
+        fecha, hora, senal, resultado, buy_price, profit, payout,
+        entry_spot, exit_spot, contract_id, patron, impulso, continuidad,
+        score_senal, estructura, bos, choch, sweep, str(contexto_valido),
+    ])
