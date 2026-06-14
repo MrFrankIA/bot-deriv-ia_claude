@@ -87,6 +87,9 @@ VELAS_EVALUAR_RESTO   = 4
 #   - COMPRAR en BAJISTA|SIN_SWEEP: WR 47.3% (rebote debil)
 # F4 los bloquea. Resultado esperado (validado, n=601): WR 55.7%, exp +0.070/op,
 # IC95 [51.7, 59.7]. Reversible: cambiar a False + reiniciar bot.
+# MODO SOMBRA: F4 solo filtra la ejecucion DEMO real; el paper sigue operando
+# TODO (shadow completo) para conservar datos de los buckets descartados y
+# alimentar el motor de aprendizaje. Dashboard: demo=filtrado vs paper=todo.
 FILTRO_F4_ACTIVO = True
 
 # =========================
