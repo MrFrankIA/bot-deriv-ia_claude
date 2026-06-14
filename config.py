@@ -78,6 +78,17 @@ VELAS_EVALUAR_LATERAL = 1
 VELAS_EVALUAR_RESTO   = 4
 
 # =========================
+# FILTRO F4: Bloquear patrones perdedores (EXPERIMENTAL)
+# =========================
+# Análisis de 1.220 ops demo identificó dos buckets sistematicamente perdedores:
+#   - VENDER: WR 47.7% (pierde -49.2 USD)
+#   - COMPRAR en BAJISTA|SIN_SWEEP: WR 47.3% (pierde -33.8 USD)
+# F4 los bloquea. Resultado esperado (in-sample): WR 56%, exp +0.075/op,
+# IC95 inferior 52.0% (toca break-even).
+# Reversible: cambiar a False + reiniciar bot.
+FILTRO_F4_ACTIVO = True
+
+# =========================
 # EJECUCION DEMO (EXPERIMENTAL)
 # =========================
 # Por defecto el bot solo SIMULA (paper). Para operar en cuenta DEMO real de

@@ -19,7 +19,8 @@ from config import (
     VELAS_EVALUAR_RESTO,
     SEGUNDOS_VELA_M1,
     MODO_EJECUCION,
-    MAX_OPERACIONES_ABIERTAS
+    MAX_OPERACIONES_ABIERTAS,
+    FILTRO_F4_ACTIVO
 )
 from almacenamiento import (
     crear_archivos_csv,
@@ -66,6 +67,7 @@ from filtro_contexto import (
     detectar_mercado_lateral,
     evaluar_contexto_entrada
 )
+from filtro_f4 import aplicar_filtro_f4
 
 
 ticks_vela = []
@@ -435,6 +437,15 @@ async def escuchar_ticks():
                 if ACTIVAR_FILTRO_CONTEXTO and not contexto_valido:
                     permitir_operacion = False
                     motivos.append(motivo_contexto)
+
+                if FILTRO_F4_ACTIVO:
+                    bloqueado_f4, motivo_f4 = aplicar_filtro_f4(
+                        senal_tecnica, estructura, sweep
+                    )
+                    if bloqueado_f4:
+                        permitir_operacion = False
+                        motivos.append(motivo_f4)
+                        print(f"🚫 F4: bloqueado por {motivo_f4}")
 
                 motivo_bloqueo = "|".join(motivos)
 
