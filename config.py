@@ -78,6 +78,21 @@ VELAS_EVALUAR_LATERAL = 1
 VELAS_EVALUAR_RESTO   = 4
 
 # =========================
+# FILTRO F4: Bloquear patrones perdedores (EXPERIMENTAL)
+# =========================
+# Análisis de ~1.233 ops demo identificó tres buckets sistematicamente perdedores
+# (validado contra el modulo real filtro_f4.py):
+#   - VENDER: WR 47.7% (lado corto sin edge)
+#   - COMPRAR en SWEEP_HIGH: WR 38.3% (exp -0.265, el peor)
+#   - COMPRAR en BAJISTA|SIN_SWEEP: WR 47.3% (rebote debil)
+# F4 los bloquea. Resultado esperado (validado, n=601): WR 55.7%, exp +0.070/op,
+# IC95 [51.7, 59.7]. Reversible: cambiar a False + reiniciar bot.
+# MODO SOMBRA: F4 solo filtra la ejecucion DEMO real; el paper sigue operando
+# TODO (shadow completo) para conservar datos de los buckets descartados y
+# alimentar el motor de aprendizaje. Dashboard: demo=filtrado vs paper=todo.
+FILTRO_F4_ACTIVO = True
+
+# =========================
 # EJECUCION DEMO (EXPERIMENTAL)
 # =========================
 # Por defecto el bot solo SIMULA (paper). Para operar en cuenta DEMO real de

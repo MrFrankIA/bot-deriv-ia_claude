@@ -19,7 +19,8 @@ from config import (
     VELAS_EVALUAR_RESTO,
     SEGUNDOS_VELA_M1,
     MODO_EJECUCION,
-    MAX_OPERACIONES_ABIERTAS
+    MAX_OPERACIONES_ABIERTAS,
+    FILTRO_F4_ACTIVO
 )
 from almacenamiento import (
     crear_archivos_csv,
@@ -66,6 +67,7 @@ from filtro_contexto import (
     detectar_mercado_lateral,
     evaluar_contexto_entrada
 )
+from filtro_f4 import aplicar_filtro_f4
 
 
 ticks_vela = []
@@ -436,6 +438,17 @@ async def escuchar_ticks():
                     permitir_operacion = False
                     motivos.append(motivo_contexto)
 
+                # F4 en modo SOMBRA: NO bloquea paper (que sigue operando TODO
+                # como shadow completo para alimentar el motor de aprendizaje).
+                # Solo decide si la operacion se ejecuta en DEMO real. Asi el
+                # dashboard compara demo (filtrado por F4) vs paper (todo).
+                bloqueado_f4 = False
+                motivo_f4 = ""
+                if FILTRO_F4_ACTIVO:
+                    bloqueado_f4, motivo_f4 = aplicar_filtro_f4(
+                        senal_tecnica, estructura, sweep
+                    )
+
                 motivo_bloqueo = "|".join(motivos)
 
                 if not permitir_operacion and motivo_bloqueo:
@@ -465,7 +478,10 @@ async def escuchar_ticks():
                     print("💾 Operación guardada para evaluación")
 
                     if MODO_EJECUCION == "demo":
-                        lanzar_operacion_demo(senal_tecnica, operacion)
+                        if not bloqueado_f4:
+                            lanzar_operacion_demo(senal_tecnica, operacion)
+                        else:
+                            print(f"🌑 F4 (sombra): demo omitido por {motivo_f4} (paper SÍ registra)")
 
                 ahora_senal = datetime.now()
                 fecha_senal = ahora_senal.strftime("%Y-%m-%d")
